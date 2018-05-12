@@ -47,7 +47,6 @@ class _Node():
 
         # 分ける前のgini係数
         gini = calc_gini(y)
-        print('分ける前のgini係数 {}'.format(gini,))
 
         # 一番良いgini係数を補完？していく
         best_gini_index = 0.0
@@ -81,10 +80,6 @@ class _Node():
                     best_gini_index = gini_index
                     best_x = n
                     best_threshold = threshold
-
-        print('best gini {}, best x {}, best threshold {}'.format(best_gini_index,
-                                                                  best_x,
-                                                                  best_threshold))
 
         # 不純度が減らなければ終了
         if best_gini_index == 0.0:
@@ -127,7 +122,54 @@ class _Node():
             'data_count': self.data_count,
             'name': _name
         }
-    
+
+    def predict(self, d):
+        if self.x is None:
+            return self.label
+
+        if d[self.x] < self.threshold:
+            return self.left.predict(d)
+        else:
+            return self.right.predict(d)
+
+
+class DecisionTree():
+    def __init__(self):
+        self.root = _Node()
+
+    def fit(self, X, y):
+        self.root.build(X, y)
+
+    def predict(self, data):
+        results = []
+        for d in data:
+            results.append(self.root.predict(d))
+
+        return results
+
+    def make_graph(self):
+        tree_dict = self.root.get_tree_info()
+
+        # formatはpngを指定(他にはPDF, PNG, SVGなどが指定可)
+        g = Digraph(format='png')
+        g.attr('node', shape='circle')
+        tree_dict = self.root.get_tree_info()
+        make_graph(tree_dict, g)
+        g.render()
+
+
+def make_graph(d, g):
+    if 'label' in d:
+        # 葉
+        g.node(d['name'])
+    else:
+        # 節
+        g.edge(d['name'], d['left']['name'], label=str(d['left']['data_count']))
+        g.edge(d['name'], d['right']['name'], label=str(d['right']['data_count']))
+
+        make_graph(d['left'],  g)
+        make_graph(d['right'], g)
+
 
 if __name__ == '__main__':
     # test
@@ -137,29 +179,8 @@ if __name__ == '__main__':
     y = np.array(iris_data.target)
 
     X = x[:, :2]
-    root = _Node()
-    root.build(X, y)
+    tree = DecisionTree()
+    tree.fit(X, y)
+    print(tree.predict(X))
 
-    # formatはpngを指定(他にはPDF, PNG, SVGなどが指定可)
-    g = Digraph(format='png')
-    g.attr('node', shape='circle')
-    tree_dict = root.get_tree_info()
-    import pprint
-    pprint.pprint(tree_dict)
-
-    def make_graph(d, g):
-        if 'label' in d:
-            # 葉
-            g.node(d['name'])
-        else:
-            # 節
-            g.edge(d['name'], d['left']['name'], label=str(d['left']['data_count']))
-            g.edge(d['name'], d['right']['name'], label=str(d['right']['data_count']))
-
-            make_graph(d['left'],  g)
-            make_graph(d['right'], g)
-
-    _name = 'root'
-    g.node(_name, color='pink')
-    make_graph(tree_dict, g)
-    g.render()
+    tree.make_graph()
