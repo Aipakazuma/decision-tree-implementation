@@ -29,6 +29,7 @@ class _Node():
         self.label = None
         self.gini_index = 0.0
         self.x = None
+        self.n_x = None
         self.threshold = None
         self.max_depth = max_depth
 
@@ -38,10 +39,11 @@ class _Node():
         if len(X.shape) <= 1:
             raise ValueError('Xは2次元で渡してください.')
 
-        n_X = X.shape[1]
+        self.n_x = X.shape[1]
 
         # 全部同じクラスなら分割する必要がないので処理終了
         unique, counts = np.unique(y, return_counts=True)
+        self.labels = unique
         if len(unique) == 1:
             self.label = unique[0]
             return
@@ -62,7 +64,7 @@ class _Node():
         best_threshold = None
 
         # 分割候補の計算
-        for n in range(n_X):
+        for n in range(self.n_x):
             # 分割候補の作成
             # 重複削除
             data_unique = np.unique(X[:, n])
@@ -144,9 +146,11 @@ class _Node():
 class DecisionTree():
     def __init__(self, max_depth=None):
         self.root = _Node(max_depth=max_depth)
+        self.importances = None
 
     def fit(self, X, y):
         self.root.build(X, y)
+        self.compute_feature_importances()
 
     def predict(self, data):
         results = []
@@ -161,9 +165,28 @@ class DecisionTree():
         # formatはpngを指定(他にはPDF, PNG, SVGなどが指定可)
         g = Digraph(format='png')
         g.attr('node', shape='circle')
-        tree_dict = self.root.get_tree_info()
         make_graph(tree_dict, g)
         g.render()
+
+    def _compute_feature_importances(self, node):
+        if node.x is None:
+            return
+
+        self.importances[node.x] += node.gini_index * node.data_count
+
+        self._compute_feature_importances(node.left)
+        self._compute_feature_importances(node.right)
+
+    def compute_feature_importances(self, normalize=True):
+        self.importances = np.zeros(self.root.n_x)
+        self._compute_feature_importances(self.root)
+        self.importances /= self.root.data_count
+
+        if normalize:
+            normalizer = np.sum(self.importances)
+
+            if normalizer > 0.0:
+                self.importances /= normalizer
 
 
 def make_graph(d, g):
@@ -198,10 +221,12 @@ if __name__ == '__main__':
 
     print(classification_report(y_train, tree.predict(X_train)))
     print(classification_report(y_test, tree.predict(X_test)))
+    print(tree.importances)
 
     s_tree = DecisionTreeClassifier(max_depth=3)
     s_tree.fit(X_train, y_train)
     print(classification_report(y_train, s_tree.predict(X_train)))
     print(classification_report(y_test, s_tree.predict(X_test)))
+    print(s_tree.feature_importances_)
 
     tree.make_graph()
