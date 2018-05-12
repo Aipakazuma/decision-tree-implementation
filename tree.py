@@ -16,13 +16,28 @@ def calc_gini(y):
     return gini
 
 
+def calc_entropy(y):
+    """情報エントロピー.
+    """
+    classes = np.unique(y)
+    data_length = y.shape[0]
+
+    val = 0
+    for c in classes:
+        p = len(y[y == c]) / data_length
+        if p != 0.0:
+            val -= p * np.log2(p)
+
+    return val
+
+
 def calc_gini_index(gini, gini_l, gini_r, pl, pr):
     """gini index -> 分割の評価方法."""
     return gini - (pl * gini_l + pr * gini_r)
 
 
 class _Node():
-    def __init__(self, max_depth=None):
+    def __init__(self, criterion='gini', max_depth=None):
         self.left = None
         self.right = None
         self.data_count = 0
@@ -31,6 +46,7 @@ class _Node():
         self.x = None
         self.n_x = None
         self.threshold = None
+        self.criterion = criterion
         self.max_depth = max_depth
 
     def build(self, X, y, depth=1):
@@ -56,7 +72,15 @@ class _Node():
             return
 
         # 分ける前のgini係数
-        gini = calc_gini(y)
+        if self.criterion == 'gini':
+            calc_func = calc_gini
+        elif self.criterion == 'entropy':
+            calc_func = calc_entropy
+        else:
+            raise ValueError('{}は存在しません.'.format(self.criterion))
+
+        gini = calc_func(y)
+        print(gini)
 
         # 一番良いgini係数を補完？していく
         best_gini_index = 0.0
@@ -80,8 +104,8 @@ class _Node():
                 y_r = y[X[:, n] >= threshold]
 
                 # 分割後のgini係数を計算
-                gini_l = calc_gini(y_l)
-                gini_r = calc_gini(y_r)
+                gini_l = calc_func(y_l)
+                gini_r = calc_func(y_r)
                 p_l = float(y_l.shape[0]) / self.data_count
                 p_r = float(y_r.shape[0]) / self.data_count
                 gini_index = calc_gini_index(gini, gini_l, gini_r, p_l, p_r)
@@ -103,14 +127,14 @@ class _Node():
         conditions_l = X[:, self.x] < self.threshold
         x_l = X[conditions_l]
         y_l = y[conditions_l]
-        self.left = _Node(max_depth=self.max_depth)
+        self.left = _Node(criterion=self.criterion, max_depth=self.max_depth)
         self.left.build(x_l, y_l, depth + 1)
 
         # 右側の分割
         conditions_r = X[:, self.x] >= self.threshold
         x_r = X[conditions_r]
         y_r = y[conditions_r]
-        self.right = _Node(max_depth=self.max_depth)
+        self.right = _Node(criterion=self.criterion, max_depth=self.max_depth)
         self.right.build(x_r, y_r, depth + 1)
 
     def get_tree_info(self):
@@ -144,8 +168,8 @@ class _Node():
 
 
 class DecisionTree():
-    def __init__(self, max_depth=None):
-        self.root = _Node(max_depth=max_depth)
+    def __init__(self, criterion='gini', max_depth=None):
+        self.root = _Node(criterion=criterion, max_depth=max_depth)
         self.importances = None
 
     def fit(self, X, y):
@@ -216,14 +240,14 @@ if __name__ == '__main__':
     # X = x[:, :2]
     X = x
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=71)
-    tree = DecisionTree(max_depth=3)
+    tree = DecisionTree()
     tree.fit(X_train, y_train)
 
     print(classification_report(y_train, tree.predict(X_train)))
     print(classification_report(y_test, tree.predict(X_test)))
     print(tree.importances)
 
-    s_tree = DecisionTreeClassifier(max_depth=3)
+    s_tree = DecisionTreeClassifier()
     s_tree.fit(X_train, y_train)
     print(classification_report(y_train, s_tree.predict(X_train)))
     print(classification_report(y_test, s_tree.predict(X_test)))
