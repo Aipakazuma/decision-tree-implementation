@@ -1,4 +1,3 @@
-from sklearn.datasets import load_iris
 import numpy as np
 from graphviz import Digraph
 
@@ -57,7 +56,7 @@ class _Node():
         for n in range(n_X):
             # 分割候補の作成
             # 重複削除
-            data_unique = np.unique(x[:, n])
+            data_unique = np.unique(X[:, n])
             # (a ~ y + b ~ z) / 2.0
             # -> (a + b) / 2.0
             # -> aとbの中間の値を作成してくれる
@@ -172,6 +171,9 @@ def make_graph(d, g):
 
 
 if __name__ == '__main__':
+    from sklearn.datasets import load_iris
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import classification_report
     # test
     iris_data = load_iris()
     # ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)']
@@ -179,8 +181,11 @@ if __name__ == '__main__':
     y = np.array(iris_data.target)
 
     X = x[:, :2]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=71)
     tree = DecisionTree()
-    tree.fit(X, y)
-    print(tree.predict(X))
+    tree.fit(X_train, y_train)
+
+    print(classification_report(y_train, tree.predict(X_train)))
+    print(classification_report(y_test, tree.predict(X_test)))
 
     tree.make_graph()
