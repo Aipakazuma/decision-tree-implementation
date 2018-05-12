@@ -23,4 +23,9 @@ if __name__ == '__main__':
     print(classification_report(y_train, tree.predict(X_train)))
     print(classification_report(y_test, tree.predict(X_test)))
 
-    tree.make_graph()
+    # tree.make_graph()
+
+    s_tree = DecisionTreeClassifier(max_depth=3)
+    s_tree.fit(X_train, y_train)
+    print(classification_report(y_train, s_tree.predict(X_train)))
+    print(classification_report(y_test, s_tree.predict(X_test)))
