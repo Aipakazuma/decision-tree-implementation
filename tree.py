@@ -34,6 +34,10 @@ class _Node():
 
     def build(self, X, y, depth=1):
         self.data_count = X.shape[0]
+
+        if len(X.shape) <= 1:
+            raise ValueError('Xは2次元で渡してください.')
+
         n_X = X.shape[1]
 
         # 全部同じクラスなら分割する必要がないので処理終了
@@ -186,15 +190,16 @@ if __name__ == '__main__':
     x = np.array(iris_data.data)
     y = np.array(iris_data.target)
 
-    X = x[:, :2]
+    # X = x[:, :2]
+    X = x
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=71)
-    tree = DecisionTree(max_depth=5)
+    tree = DecisionTree(max_depth=3)
     tree.fit(X_train, y_train)
 
     print(classification_report(y_train, tree.predict(X_train)))
     print(classification_report(y_test, tree.predict(X_test)))
 
-    s_tree = DecisionTreeClassifier(max_depth=5)
+    s_tree = DecisionTreeClassifier(max_depth=3)
     s_tree.fit(X_train, y_train)
     print(classification_report(y_train, s_tree.predict(X_train)))
     print(classification_report(y_test, s_tree.predict(X_test)))
