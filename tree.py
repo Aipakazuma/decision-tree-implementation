@@ -22,7 +22,7 @@ def calc_gini_index(gini, gini_l, gini_r, pl, pr):
 
 
 class _Node():
-    def __init__(self):
+    def __init__(self, max_depth=None):
         self.left = None
         self.right = None
         self.data_count = 0
@@ -30,8 +30,9 @@ class _Node():
         self.gini_index = 0.0
         self.x = None
         self.threshold = None
+        self.max_depth = max_depth
 
-    def build(self, X, y):
+    def build(self, X, y, depth=1):
         self.data_count = X.shape[0]
         n_X = X.shape[1]
 
@@ -43,6 +44,10 @@ class _Node():
 
         # ラベルを多数決で決める
         self.label = unique[np.argmax(counts)]
+
+        # 木の数が上限と一致したら終了
+        if depth == self.max_depth:
+            return
 
         # 分ける前のgini係数
         gini = calc_gini(y)
@@ -92,15 +97,15 @@ class _Node():
         conditions_l = X[:, self.x] < self.threshold
         x_l = X[conditions_l]
         y_l = y[conditions_l]
-        self.left = _Node()
-        self.left.build(x_l, y_l)
+        self.left = _Node(max_depth=self.max_depth)
+        self.left.build(x_l, y_l, depth + 1)
 
         # 右側の分割
         conditions_r = X[:, self.x] >= self.threshold
         x_r = X[conditions_r]
         y_r = y[conditions_r]
-        self.right = _Node()
-        self.right.build(x_r, y_r)
+        self.right = _Node(max_depth=self.max_depth)
+        self.right.build(x_r, y_r, depth + 1)
 
     def get_tree_info(self):
         _name = 'name_{}'.format(np.random.uniform())
@@ -133,8 +138,8 @@ class _Node():
 
 
 class DecisionTree():
-    def __init__(self):
-        self.root = _Node()
+    def __init__(self, max_depth=None):
+        self.root = _Node(max_depth=max_depth)
 
     def fit(self, X, y):
         self.root.build(X, y)
@@ -174,6 +179,7 @@ if __name__ == '__main__':
     from sklearn.datasets import load_iris
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import classification_report
+    from sklearn.tree import DecisionTreeClassifier
     # test
     iris_data = load_iris()
     # ['sepal length (cm)', 'sepal width (cm)', 'petal length (cm)', 'petal width (cm)']
@@ -182,10 +188,15 @@ if __name__ == '__main__':
 
     X = x[:, :2]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=71)
-    tree = DecisionTree()
+    tree = DecisionTree(max_depth=5)
     tree.fit(X_train, y_train)
 
     print(classification_report(y_train, tree.predict(X_train)))
     print(classification_report(y_test, tree.predict(X_test)))
+
+    s_tree = DecisionTreeClassifier(max_depth=5)
+    s_tree.fit(X_train, y_train)
+    print(classification_report(y_train, s_tree.predict(X_train)))
+    print(classification_report(y_test, s_tree.predict(X_test)))
 
     tree.make_graph()
