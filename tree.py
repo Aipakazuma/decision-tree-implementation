@@ -41,6 +41,7 @@ class _Node():
         self.left = None
         self.right = None
         self.data_count = 0
+        self.count_by_label = []
         self.label = None
         self.gini_index = 0.0
         self.x = None
@@ -59,6 +60,7 @@ class _Node():
 
         # 全部同じクラスなら分割する必要がないので処理終了
         unique, counts = np.unique(y, return_counts=True)
+        self.count_by_label = counts
         self.labels = unique
         if len(unique) == 1:
             self.label = unique[0]

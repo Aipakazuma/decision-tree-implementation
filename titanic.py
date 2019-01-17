@@ -9,7 +9,7 @@ import numpy as np
 
 
 if __name__ == '__main__':
-    train_df = pd.read_csv('~/.kaggle/competitions/titanic/train.csv')
+    train_df = pd.read_csv('/app/data/train.csv')
     le_sex = LabelEncoder()
     le_sex.fit(train_df['Sex'])
     train_df.loc[:, 'SexInt'] = le_sex.transform(train_df['Sex'])
@@ -29,3 +29,4 @@ if __name__ == '__main__':
     s_tree.fit(X_train, y_train)
     print(classification_report(y_train, s_tree.predict(X_train)))
     print(classification_report(y_test, s_tree.predict(X_test)))
+    s_tree.predict_proba(X_test)
